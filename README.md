@@ -1,3 +1,43 @@
+## geom_import.js
+NodeJS script to import Neighborhoods geojson to postgres as geometries
+
+Assuming postgres connect string:
+`'postgres://postgres:postgres@localhost:5432/postgres'`
+
+Create postgres table:
+```sql
+CREATE TABLE IF NOT EXISTS neighborhoods (
+  id         SERIAL,
+  root       varchar(40),
+  name       varchar(40) UNIQUE,
+  listname   varchar(40) UNIQUE,
+  mapname    varchar(40) UNIQUE,
+  the_geometry GEOMETRY,
+  created_at date,
+  updated_at date
+);
+ 
+```
+
+run `node geom_import.js`
+
+In postgres run the following:
+`SELECT name FROM neighborhoods WHERE ST_Intersects(ST_PointFromText('POINT(-75.196309 39.97462)'), neighborhoods.the_geometry)=true;`
+
+Should return:
+```
+  name  
+  --------
+   MANTUA
+   (1 row)
+```
+
+## import.js
+@@NOTE At the moment this fails at about 30% complete for datasets contained over 100k records (approx)
+A script to import 311 (carto api) records to local postgres db using sequelize
+
+### fetch data
+The following need to be run in the command line to get the raw json response data
 First, batch the queries so
 
 #### 0 - 250,000
