@@ -64,15 +64,18 @@ CREATE TABLE IF NOT EXISTS neighborhoods (
 
 const insertRow = (feature) => {
   return new Promise((resolve, reject) => {
-    console.log('>>', feature.properties.name, feature.properties.listname, feature.properties.mapname)
+   // console.log('>>', feature.properties.name, feature.properties.listname, feature.properties.mapname)
     Record.create({
-      the_geometry: polygon,
+      the_geometry: {type: 'MultiPolygon', coordinates: feature.geometry.coordinates },
       root: "Philly",
       name: feature.properties.name,
       listname: feature.properties.listname,
       mapname: feature.properties.mapname
     })
-    .then(resolve)
+    .then(Rec => {
+      console.log(Rec.the_geometry)
+      resolve(Rec)
+    })
     .catch(reject)
   })
 } 
