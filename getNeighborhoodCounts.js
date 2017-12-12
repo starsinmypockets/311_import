@@ -1,17 +1,16 @@
 const fs = require('fs')
 const Sequelize = require('sequelize')
-const JSONStream = require('JSONStream')
-
+const sleep = require('sleep')
+// Sequelize Types
 const INTEGER = Sequelize.INTEGER
 const STRING = Sequelize.STRING
-const FLOAT = Sequelize.FLOAT
 const DATE = Sequelize.DATE
 
 const sequelize = new Sequelize('postgres://postgres:postgres@localhost:5432/postgres', 
   {
     logging: false,
     pool: {
-      max: 10,
+      max: 15,
       min: 0,
       idle: 20000,
       acquire: 20000
@@ -40,6 +39,27 @@ const Record = sequelize.define('neighb_counts', {
   freezeTableName: true
 })
 
+const services = [
+	"Maintenance Residential or Commercial",
+	"Rubbish/Recyclable Mater",
+	"Illegal Dumping",
+	"Abandoned Vehicle",
+	"Directory Assistance",
+	"Graffiti Removal",
+	"Street Defect",
+	"Street Light Outage",
+	"Vacant Lot Clean-Up",
+	"Vacant House or Commercial",
+	"Salting",
+	"Sanitation / Dumpster Violation",
+	"Traffic Signal Emergency",
+	"Street Trees",
+	"Building Dangerous",
+	"Smoke Detector",
+	"Building Construction",
+	"Construction Site Task Force"
+]
+
 // for testing:
 const insertRecord = () => {
 Record.create({
@@ -65,36 +85,56 @@ sequelize
 // + import geojson
 // + figure out geojson query
 const doImport = () => {
-  sequelize.query('SELECT DISTINCT name from neighborhoods').then(res => {
-    const names = res[0].map(obj => obj.name)
-    const results = names.map(name => {
-      getServiceNumbersByNeighborhood(name)
-        .then(res => {
-          // do record insert here
-          res.map(r => {
-            console.log(name, r[0])
-            if (r[0]) {
-              console.log('ok')
-              const rec = {
-                service_name: r[0].service_name,
-                count: parseInt(r[0].count),
-                neighborhood: name
-              }
-              Record.create(rec)
-                .then(inserted => {
-                console.log("INSERTED", inserted)
-              })
-                .catch(console.log)
-
-            }
-          })
-      })
-        .catch(console.log)
+  fetchResources().then(pss => {
+    Promise.all(pss).then(res => {
+      console.log("RES>>>>", res.map(r => r[0][0]))
     })
+//    insertRecords(res)
   })
 }
 
-const getServiceNumbersByNeighborhood = (name) => {
-  const service = "Abandoned Vehicle"
+const fetchResources = () => {
+  return new Promise ((resolve, reject) => {
+  
+  sequelize.query('SELECT DISTINCT name from neighborhoods').then(res => {
+    const names = res[0].map(obj => obj.name).slice(0,1)
+    
+    const results = names.reduce((acc, name) => {
+			const records= services.map(service => {
+				const svQ = getServiceNumbersByNeighborhood(name,service)
+        return svQ // return service query
+      })
+      console.log(">>>>", acc, records)
+      return acc.concat(records)
+    }, [])
+
+    resolve(results)
+  })
+
+  })
+}
+
+const insertRecords = (res) => {
+  const records = res.map(r => {
+    if (r[0]) {
+     return {
+        service_name: r[0].service_name,
+        count: parseInt(r[0].count),
+        neighborhood: name
+      }
+    } else {
+      return {}
+    }
+  })
+  
+  Record.bulkCreate(records)
+    .then(inserted => {
+      console.log("INSERTED", inserted)
+    })
+    .catch(console.log)
+}
+
+
+const getServiceNumbersByNeighborhood = (name, service) => {
   return sequelize.query(`SELECT service_name, count(id) AS "count" FROM philly_311 WHERE service_name = '${service}' AND (ST_Contains(ST_SetSRID((SELECT the_geometry FROM neighborhoods WHERE name='${name}'),4326), ST_SetSRID(philly_311.the_geom, 4326))=true) GROUP BY service_name;`)
 }
