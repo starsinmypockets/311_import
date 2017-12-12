@@ -87,8 +87,10 @@ sequelize
 const doImport = () => {
   fetchResources().then(pss => {
     Promise.all(pss).then(res => {
-      console.log("RES>>>>", res.map(r => r[0][0]))
+      const arr = res.map(r => r[0][0])
+      console.log("RES>>>>", arr)
     })
+    .catch(console.log)
 //    insertRecords(res)
   })
 }
@@ -97,14 +99,13 @@ const fetchResources = () => {
   return new Promise ((resolve, reject) => {
   
   sequelize.query('SELECT DISTINCT name from neighborhoods').then(res => {
-    const names = res[0].map(obj => obj.name).slice(0,1)
+    const names = res[0].map(obj => obj.name).slice(0,4)
     
     const results = names.reduce((acc, name) => {
 			const records= services.map(service => {
 				const svQ = getServiceNumbersByNeighborhood(name,service)
         return svQ // return service query
       })
-      console.log(">>>>", acc, records)
       return acc.concat(records)
     }, [])
 
