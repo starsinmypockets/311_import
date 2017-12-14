@@ -1,3 +1,9 @@
+/**
+ * Note - until we have more resources
+ * this will have to work for a single
+ * service_name only
+ */
+
 const fs = require('fs')
 const Sequelize = require('sequelize')
 const JSONStream = require('JSONStream')
@@ -95,6 +101,6 @@ const doImport = () => {
 }
 
 const getServiceNumbersByNeighborhood = (name) => {
-  const service = "Abandoned Vehicle"
+  const service = "Construction Site Task Force"
   return sequelize.query(`SELECT service_name, count(id) AS "count" FROM philly_311 WHERE service_name = '${service}' AND (ST_Contains(ST_SetSRID((SELECT the_geometry FROM neighborhoods WHERE name='${name}'),4326), ST_SetSRID(philly_311.the_geom, 4326))=true) GROUP BY service_name;`)
 }
