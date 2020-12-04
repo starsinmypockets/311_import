@@ -7,7 +7,7 @@ const STRING = Sequelize.STRING
 const FLOAT = Sequelize.FLOAT
 const DATE = Sequelize.DATE
 
-const sequelize = new Sequelize('postgres://postgres:postgres@localhost:5432/postgres', 
+const sequelize = new Sequelize('postgres://admin:admin@localhost:5432/philly_311', 
   {
     logging: false,
     pool: {
@@ -45,7 +45,7 @@ const Record = sequelize.define('philly_311', {
 })
 
 // for testing:
-const insertRecord = () => {
+const insertTestRecord = () => {
 Record.create({
 	cartodb_id: 1,
   the_geom: null,
@@ -66,38 +66,43 @@ Record.create({
   media_url:"http://foo.bar",
   lat: 123.122,
   lon: -0.2411
+}).then(res => {
+  console.log('Success?', res)
 })
 }
 sequelize
   .authenticate()
   .then(() => {
     console.log('Connection has been established successfully.')
+    // insertTestRecord() uncomment to test sequelize connection
     doImport()
   })
   .catch(err => {
     console.error('Unable to connect to the database:', err)
   })
 
-// @@TODO: 
-// 
-// + create model for 311 record and pipe to postgres
-// + import geojson
-// + figure out geojson query
-// + integrate graphql
 const doImport = () => {
-console.log('do import')
-  const filePath = "./data/philly311data_0.json"
+  console.log('-----------------------do import---------------------------')
+  const filePath = "./public_cases_fc.geojson"
   const readStream = fs.createReadStream(filePath)
-  const parser = JSONStream.parse('rows.*')
+  const parser = JSONStream.parse('rows.*.features.*')
 
 readStream.on('open', res => {
-  console.log('Read Stream from ' + filePath, res)
+  console.log('--------------------Read Stream from ' + filePath + '-----------------------', res)
   readStream.pipe(parser)
 })
 
-parser.on('data', data => {
+let count = 0
+
+parser.on('data', async data => {
   try {
-    Record.create(data)
+    count += 1
+    console.log("+++++++++++++++++++++"+count+"++++++++++++++++++")
+    if (count > 0) { // use this to restart large imports from last imported record
+      console.log("--------------------------------------RECORD-----------------------------------")
+      console.log(data.properties)
+      await Record.create(data.properties)
+     }
   } catch (e) {
     console.log('INSERT FAIL', e)
   }

@@ -9,7 +9,7 @@ const FLOAT = Sequelize.FLOAT
 const DATE = Sequelize.DATE
 const _JSON = Sequelize.JSON
 
-const sequelize = new Sequelize('postgres://postgres:postgres@localhost:5432/postgres', 
+const sequelize = new Sequelize('postgres://admin:admin@localhost:5432/philly_311', 
   {
     logging: false,
     pool: {
@@ -63,8 +63,10 @@ CREATE TABLE IF NOT EXISTS neighborhoods (
 */
 
 const insertRow = (feature) => {
+  console.log('-------------', feature)
   return new Promise((resolve, reject) => {
    // console.log('>>', feature.properties.name, feature.properties.listname, feature.properties.mapname)
+
     Record.create({
       the_geometry: {type: 'MultiPolygon', coordinates: feature.geometry.coordinates },
       root: "Philly",
